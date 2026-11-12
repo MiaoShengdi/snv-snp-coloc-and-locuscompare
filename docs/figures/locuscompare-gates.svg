@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 340" width="760" height="340" font-family="'Segoe UI','Microsoft YaHei',sans-serif">
+  <title>locuscompare 的四道关卡</title>
+  <text x="30" y="20" font-size="13.5" font-weight="700" fill="#0f172a">locuscompare 的四道关卡：每一道都能让图变空而不报错</text>
+
+  <rect x="30" y="34" width="700" height="70" rx="10" fill="#f8fafc" stroke="#dbe3ec"/>
+  <circle cx="58" cy="69" r="14" fill="#2d7a7b"/>
+  <text x="58" y="74" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">1</text>
+  <text x="84" y="58" font-size="14" font-weight="700" fill="#0f172a">① 字符串对齐：merge(by = "rsid", all = FALSE)</text>
+  <text x="84" y="80" font-size="13" fill="#475569">两文件 ID 必须逐字相同；rs12345 与 chr6:12345:A:G 混用 → 交集 0 行</text>
+  <text x="84" y="98" font-size="13" fill="#94a3b8">→ 下游所有 plot 拿到空表，报错信息通常跟 ID 无关</text>
+
+  <rect x="30" y="110" width="700" height="70" rx="10" fill="#f8fafc" stroke="#dbe3ec"/>
+  <circle cx="58" cy="145" r="14" fill="#2d7a7b"/>
+  <text x="58" y="150" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">2</text>
+  <text x="84" y="134" font-size="14" font-weight="700" fill="#0f172a">② 坐标可查：get_position() 查 1000G p3v5 远程索引</text>
+  <text x="84" y="156" font-size="13" fill="#475569">rsid 不在 tkg_p3v5a 表里 → inner merge 静默丢点，罕见 SNV 成片消失</text>
+  <text x="84" y="174" font-size="13" fill="#94a3b8">→ 不是「SNV 不能画」，是「没被这个索引收录的不画」</text>
+
+  <rect x="30" y="186" width="700" height="70" rx="10" fill="#f8fafc" stroke="#dbe3ec"/>
+  <circle cx="58" cy="221" r="14" fill="#2d7a7b"/>
+  <text x="58" y="226" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">3</text>
+  <text x="84" y="210" font-size="14" font-weight="700" fill="#0f172a">③ 单染色体：unique(chr) 必须只有 1 个</text>
+  <text x="84" y="232" font-size="13" fill="#475569">丢点后 chr 变空；或两文件同一 rsID 映射到不同染色体 → 直接 stop</text>
+  <text x="84" y="250" font-size="13" fill="#94a3b8">→ "There must be one and only one chromosome."</text>
+
+  <rect x="30" y="262" width="700" height="70" rx="10" fill="#f8fafc" stroke="#dbe3ec"/>
+  <circle cx="58" cy="297" r="14" fill="#2d7a7b"/>
+  <text x="58" y="302" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">4</text>
+  <text x="84" y="286" font-size="14" font-weight="700" fill="#0f172a">④ LD 可查：retrieve_LD(chr, lead_snp, population)</text>
+  <text x="84" y="308" font-size="13" fill="#475569">lead SNP 不在 1000G p3 的 LD 表 → 所有点落成 blue4（图在，颜色无信息）</text>
+  <text x="84" y="326" font-size="13" fill="#94a3b8">→ 只有这一道是「画得出但没信息」，前三道是「画不出」</text>
+</svg>
