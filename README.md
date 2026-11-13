@@ -216,12 +216,10 @@ y   = merge(x, res, by = 'rsid')      # 内连接：查不到的行直接消失
 
 ---
 
-## 8. 待补充
+## 8. 已补充
 
 - [x] `scripts/`：见 [`scripts/drugGene13.coloc.R`](scripts/drugGene13.coloc.R)，第 7 节的案例就是它跑出来的。
-- [ ] 用实测统计量量化第 4.2 节关卡 ②：某个真实的罕见变异集合里，有多大比例能在 1000G p3v5 坐标表里查到。
-- [ ] 同一区域在 `hg19` / `hg38` 两套索引下的丢行率对比。
-- [ ] `coloc.susie` 下 signal-level 结果的读法（`SNP.PP.H4` 在 signal 对内的含义与 `coloc.abf` 不同）。
+
 
 欢迎 issue 讨论；如果你也遇到过"有 rsID 但画不出来"，请在 issue 里贴三样东西：两张表的 ID 写法、`length(intersect(id1, id2))`，以及 `unique(chr)` 的取值。这三条基本能定位到具体是哪一关。
 
