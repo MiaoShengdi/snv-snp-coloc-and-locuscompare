@@ -2,6 +2,8 @@
 
 讨论的主题是「术语层 / 模型层 / 索引层」之间的错配。
 
+作者：苗圣笛（Miao Shengdi）· <miaoshengdi@hunnu.edu.cn>
+
 > **English abstract**
 > `coloc` and `locuscompare` are both described as "SNP-level" tools, which produces a puzzle: `coloc` computes happily on a rare SNV, while `locuscompare` refuses to plot an SNV that *does* carry an rsID.
 > The resolution is that these two facts live on different layers. `coloc`'s input contract contains only `z` and `V`; there is no variant-class field that could fail. `locuscompare` joins two tables on the **literal rsid string**, then resolves coordinates through a **remote MySQL index of 1000 Genomes phase 3 v5**; anything outside that index is dropped by an inner join, and an empty chromosome vector triggers `stop()`.
@@ -11,7 +13,7 @@
 
 ## 0. 本文的范围
 
-本文只做**概念辨析与源码层面的定位**，不提供可直接运行的代码；作者已有验证过的实现，会在后续补进来（见第 7 节）。
+本文以**概念辨析与源码层面的定位**为主。第 7 节放的是我自己跑过的一个实例，代码在 `scripts/` 里，可以对着它看上面四道关卡是怎么落空的。
 
 结论里涉及的每个数字都标注了来源：或来自公开公式（可自行代入复算），或来自源码原文引述，或标注为模拟示例并给出参数。
 
@@ -190,9 +192,33 @@ y   = merge(x, res, by = 'rsid')      # 内连接：查不到的行直接消失
 
 ---
 
-## 7. 待补充
+## 7. 一个实案：C3AR1 × SLE
 
-- [ ] `scripts/`：作者自己的实现（已完成，等待上传）。
+`drugGene13.coloc.R` 跑的是这组数据：eQTL 侧 `eqtl-a-ENSG00000171860`（C3AR1），结局是 FinnGen R12 的 `M13_SYSTSLCE`。两边都给 rsID，位点落在 chr12 约 7.98–8.07 Mb，lead 是 rs2072448。
+
+`locuscompare()` 在这个区域出不了图。这批位点不在 `tkg_p3v5a` 的两张远程表里，`get_position()` 的内连接把行删空，`unique(merged$chr)` 拿到空向量，最后停在 `stop("There must be one and only one chromosome.")`。rsID 齐备改变不了这个结果：rsID 只说明 dbSNP 收过它，不说明 1000G p3v5 的索引里有它。
+
+绕开的办法是坐标和 LD 都不向 1000G 要。
+
+- 坐标。eQTL 侧取 VCF 的 `chr` 与 `pos`，GWAS 侧取 FinnGen 汇总统计的 `#chrom` 与 `pos`，两边按 `SNP` 字符串取交集。共定位区是 lead 位点 ±50 kb，lead 由基因 ±100 kb 窗口内 P 最小的位点决定。
+- 统计量。两侧各自算 `varbeta = se²` 和 `z = beta/se`，`coloc.abf()` 的 `type` 分别是 `quant` 和 `cc`，GWAS 侧再给 `s = ncase / (ncase + ncontrol)`。
+- LD 与作图。本地 plink 算出的 LD 矩阵按位置最近邻匹配，容差 200 bp，交给 `geni.plots::fig_region_stack()`。图上两条 −log10(p) 轨道同轴对齐，右侧是重组率，lead 位点带标签。
+
+[图：C3AR1 × SLE 区域堆叠](docs/figures/C3AR1-SLE-region-stack.pdf)
+
+`r2` 大量落在 0.0–0.2，白圈是 LD 面板里查不到、只能标 miss 的位点。这批 miss 点说明的是同一件事：能不能画取决于手上有没有这些位点的 LD，与它们叫 SNP 还是 SNV 无关。
+
+三处细节需要核对，写在这里而不是留在代码注释里。
+
+- 脚本调用 `fig_region_stack()` 时传了 `build = 38`，`ld_pos.rds` 的注释写的却是 GRCh37 位置。两套坐标如果真跨 build，200 bp 的最近邻匹配会大面积落空，`corr` 退回 `NULL`，图上 r² 只剩 miss 和低档。图里 miss 点偏多，先确认 `ld_pos.rds` 是哪个 build。
+- QTL 侧的 `MAF` 直接取了 `eaf`，没有像 GWAS 侧那样折成 `min(eaf, 1-eaf)`。两侧都给了 `varbeta`，coloc 不会退回用 MAF 推 `V`，影响有限，口径不统一。
+- `PPH4filter = 0.75` 只用于筛结果表，不改 `coloc.abf` 的 PP 本身；`SNP.PP.H4` 的读法仍受第 3.3 节约束。
+
+---
+
+## 8. 待补充
+
+- [x] `scripts/`：见 [`scripts/drugGene13.coloc.R`](scripts/drugGene13.coloc.R)，第 7 节的案例就是它跑出来的。
 - [ ] 用实测统计量量化第 4.2 节关卡 ②：某个真实的罕见变异集合里，有多大比例能在 1000G p3v5 坐标表里查到。
 - [ ] 同一区域在 `hg19` / `hg38` 两套索引下的丢行率对比。
 - [ ] `coloc.susie` 下 signal-level 结果的读法（`SNP.PP.H4` 在 signal 对内的含义与 `coloc.abf` 不同）。
@@ -201,7 +227,7 @@ y   = merge(x, res, by = 'rsid')      # 内连接：查不到的行直接消失
 
 ---
 
-## 8. 参考文献与源码位置
+## 9. 参考文献与源码位置
 
 - Giambartolomei C. et al. *Bayesian test for colocalisation between pairs of genetic association studies using summary statistics.* PLoS Genet 2013. `doi:10.1371/journal.pgen.1004383`
 - Wallace C. *A more accurate method for colocalisation analysis allowing for multiple causal variants.* PLoS Genet 2021.
